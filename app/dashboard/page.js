@@ -7,6 +7,7 @@ export default function Dashboard() {
   const [prospect, setProspect] = useState('')
   const [loading, setLoading] = useState(false)
   const [research, setResearch] = useState(null)
+  const [showPaywall, setShowPaywall] = useState(false)
 
   useEffect(() => {
     const getUser = async () => {
@@ -29,14 +30,23 @@ export default function Dashboard() {
     e.preventDefault()
     setLoading(true)
     setResearch(null)
+    setShowPaywall(false)
+
     try {
       const response = await fetch('/api/research', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ company: prospect })
+        body: JSON.stringify({
+          company: prospect,
+          userId: user.id
+        })
       })
+
       const result = await response.json()
-      if (result.success) {
+
+      if (result.limitReached) {
+        setShowPaywall(true)
+      } else if (result.success) {
         setResearch({
           company: prospect,
           summary: result.data.summary,
@@ -49,11 +59,13 @@ export default function Dashboard() {
     } catch (error) {
       alert('Something went wrong. Try again.')
     }
+
     setLoading(false)
   }
 
   return (
     <main className="min-h-screen bg-gray-50">
+
       <nav className="bg-white border-b border-gray-100 px-8 py-4 flex justify-between items-center">
         <div className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
           SalesIQ
@@ -70,8 +82,9 @@ export default function Dashboard() {
       </nav>
 
       <div className="max-w-5xl mx-auto px-8 py-10">
+
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Welcome back!</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Welcome back! 👋</h1>
           <p className="text-gray-500 mt-1">Research any company and get a real AI written email in seconds.</p>
         </div>
 
@@ -86,16 +99,6 @@ export default function Dashboard() {
               <div className="text-sm text-gray-500 mt-1">{s.label}</div>
             </div>
           ))}
-        </div>
-
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 mb-8 flex justify-between items-center">
-          <div>
-            <div className="text-white font-semibold text-lg">Upgrade to Pro</div>
-            <div className="text-blue-200 text-sm mt-1">Get unlimited researches and AI email sequences</div>
-          </div>
-          <a href="/pricing" className="bg-white text-blue-600 px-6 py-3 rounded-xl font-medium hover:bg-blue-50 transition-all whitespace-nowrap">
-            See Plans
-          </a>
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 mb-8">
@@ -115,7 +118,7 @@ export default function Dashboard() {
               disabled={loading}
               className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-medium hover:opacity-90 transition-all shadow-lg shadow-blue-200 disabled:opacity-50 whitespace-nowrap"
             >
-              {loading ? 'Researching...' : 'Research'}
+              {loading ? 'Researching...' : 'Research →'}
             </button>
           </form>
         </div>
@@ -124,8 +127,51 @@ export default function Dashboard() {
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
             <div className="inline-flex items-center gap-3 text-gray-500">
               <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-              <span>AI is researching {prospect}...</span>
+              <span>AI is researching <strong>{prospect}</strong>...</span>
             </div>
+            <p className="text-gray-400 text-sm mt-2">This takes about 5-10 seconds</p>
+          </div>
+        )}
+
+        {/* Paywall */}
+        {showPaywall && (
+          <div className="bg-white rounded-2xl border-2 border-blue-200 shadow-xl p-10 text-center">
+            <div className="text-5xl mb-4">🔒</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">You have used your free research!</h2>
+            <p className="text-gray-500 mb-8 max-w-md mx-auto">Upgrade to keep researching prospects and generating personalized cold emails with AI.</p>
+
+            <div className="grid grid-cols-2 gap-6 max-w-lg mx-auto mb-8">
+              <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
+                <div className="font-semibold text-gray-900 mb-1">Starter</div>
+                <div className="text-3xl font-bold text-gray-900 mb-3">$9<span className="text-sm text-gray-400 font-normal">/mo</span></div>
+                <ul className="text-sm text-gray-600 space-y-2 mb-4 text-left">
+                  <li>✓ 20 researches/mo</li>
+                  <li>✓ AI email generator</li>
+                  <li>✓ Email tracking</li>
+                </ul>
+                <a href="/pricing" className="block text-center border-2 border-blue-600 text-blue-600 py-2 rounded-xl hover:bg-blue-50 transition-all font-medium text-sm">
+                  Get Starter
+                </a>
+              </div>
+
+              <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl p-6 relative">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-900 text-xs px-3 py-1 rounded-full font-bold">
+                  BEST VALUE
+                </div>
+                <div className="font-semibold text-white mb-1">Pro</div>
+                <div className="text-3xl font-bold text-white mb-3">$29<span className="text-sm text-blue-200 font-normal">/mo</span></div>
+                <ul className="text-sm text-blue-100 space-y-2 mb-4 text-left">
+                  <li>✓ Unlimited researches</li>
+                  <li>✓ AI email sequences</li>
+                  <li>✓ Priority support</li>
+                </ul>
+                <a href="/pricing" className="block text-center bg-white text-blue-600 py-2 rounded-xl hover:bg-blue-50 transition-all font-medium text-sm">
+                  Get Pro
+                </a>
+              </div>
+            </div>
+
+            <p className="text-gray-400 text-sm">Cancel anytime. No hidden fees.</p>
           </div>
         )}
 
@@ -138,7 +184,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <div className="font-semibold text-gray-900">{research.company}</div>
-                  <div className="text-xs text-green-500 font-medium">Research complete</div>
+                  <div className="text-xs text-green-500 font-medium">✓ Research complete</div>
                 </div>
               </div>
               <p className="text-gray-600 leading-relaxed">{research.summary}</p>
@@ -173,6 +219,7 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+
       </div>
     </main>
   )

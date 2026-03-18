@@ -1,13 +1,56 @@
 import Groq from 'groq-sdk'
+import { createClient } from '@supabase/supabase-js'
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 })
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+)
+
 export async function POST(request) {
   try {
-    const { company } = await request.json()
+    const { company, userId } = await request.json()
 
+    // Check usage
+    const { data: usage } = await supabase
+      .from('usage')
+      .select('*')
+      .eq('user_id', userId)
+      .single()
+
+    // If no usage record create one
+    if (!usage) {
+      await supabase.from('usage').insert({
+        user_id: userId,
+        research_count: 0
+      })
+    }
+
+    const currentCount = usage?.research_count || 0
+
+    // Check if user has active subscription
+    const { data: subscription } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .single()
+
+    const hasActivePlan = !!subscription
+
+    // If no plan and used free research already — block
+    if (!hasActivePlan && currentCount >= 1) {
+      return Response.json({
+        success: false,
+        limitReached: true,
+        error: 'Free limit reached'
+      }, { status: 403 })
+    }
+
+    // Do the research
     const completion = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
       messages: [
@@ -34,6 +77,14 @@ Respond in this exact JSON format with no extra text outside the JSON:
     const text = completion.choices[0].message.content
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     const data = JSON.parse(jsonMatch[0])
+
+    // Update usage count
+    await supabase
+      .from('usage')
+      .upsert({
+        user_id: userId,
+        research_count: currentCount + 1
+      }, { onConflict: 'user_id' })
 
     return Response.json({ success: true, data })
 
