@@ -14,7 +14,7 @@ export default function Pricing() {
         'Email tracking',
         'Cancel anytime',
       ],
-      paypalLink: 'https://www.paypal.com/paypalme/YOUR_PAYPAL_USERNAME/9'
+      paypalLink: 'https://www.paypal.me/Buzzorra/9'
     },
     {
       name: 'Pro',
@@ -26,7 +26,7 @@ export default function Pricing() {
         'CRM integration',
         'Priority support',
       ],
-      paypalLink: 'https://www.paypal.com/paypalme/YOUR_PAYPAL_USERNAME/29'
+      paypalLink: 'https://www.paypal.me/Buzzorra/29'
     }
   ]
 
